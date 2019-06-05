@@ -1,14 +1,14 @@
 CREATE TABLE IF NOT EXISTS SUBJECT_TABLE (
-	ID				int			NOT NULL UNIQUE,
-    subj_name		varchar(64)	NOT NULL UNIQUE,
-    PRIMARY KEY (ID)
+	ID				int			NOT NULL UNIQUE PRIMARY KEY,
+    subj_name		varchar(64)	NOT NULL UNIQUE
 );
 
-CREATE TABLE IF NOT EXISTS ACADEMICS_TABLE (
+CREATE TABLE IF NOT EXISTS SCHOOL_ACADEMICS_TABLE (
 	ID				int			NOT NULL UNIQUE PRIMARY KEY,
-    subj_id			int			NOT NULL UNIQUE,
-    school_id		int			NOT NULL UNIQUE,
+    subj_id			int			NOT NULL,
+    school_id		int			NOT NULL,
     deg_percent		int			NOT NULL,
+    UNIQUE (subj_id, school_id),
     FOREIGN KEY (subj_id) REFERENCES SUBJECT_TABLE (ID),
     FOREIGN KEY (school_id) REFERENCES SCHOOL_TABLE (ID),    
     /* flags for certificates */ 

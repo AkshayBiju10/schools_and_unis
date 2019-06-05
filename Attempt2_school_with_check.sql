@@ -3,7 +3,8 @@ CREATE DATABASE IF NOT EXISTS chotta_db;
 CREATE TABLE IF NOT EXISTS SCHOOL_TABLE (
 	ID				int			NOT NULL UNIQUE,
     scl_name		varchar(64)	NOT NULL UNIQUE,
-    curr_operating	int			NOT NULL,
+    curr_operating	boolean		NOT NULL,
+    open_admissions	boolean		NOT NULL,			# OPEN ADMISSIONS POLICY
     PRIMARY KEY (ID)
 );
 
@@ -122,18 +123,25 @@ CREATE TABLE IF NOT EXISTS SCHOOL_URL (
     FOREIGN KEY (url_id) REFERENCES URL_TABLE (ID)
 );
 
+/*
+CREATE TABLE IF NOT EXISTS DEGREES_AWRDD_TABLE (
+	ID			int			NOT NULL UNIQUE PRIMARY KEY,
+    deg_deg		int			NOT NULL,
+    deg_name	varchar(64)	NOT NULL,
+    UNIQUE (deg_name, deg_deg)				
+);
+*/
 
 CREATE TABLE IF NOT EXISTS DEGREES_AWRDD_TABLE (
 	ID			int			NOT NULL UNIQUE PRIMARY KEY,
-    deg_name	int			NOT NULL,		
-    deg_deg		int			NOT NULL,		
+    deg_deg		int			NOT NULL,											# Range is 0 through 4
+    deg_name ENUM ('predominant','predominant_recoded','highest') NOT NULL,
     UNIQUE (deg_name, deg_deg)				
 );
 
-
 # Suppose the degree awarded is 'Predominant' and it has degrees from 0 through 5. Then, we can add the names of the degrees awarded with their available degrees.For example, 
 
-INSERT INTO DEGREES_AWRDD_TABLE VALUES (1,'predominant',0),(2,'predominant',1),(3,'predominant',2),(4,'predominant',3),(5,'predominant',4),(6,'predominant',5);
+# INSERT INTO DEGREES_AWRDD_TABLE VALUES (1,'predominant',0),(2,'predominant',1),(3,'predominant',2),(4,'predominant',3),(5,'predominant',4),(6,'predominant',5);
 
 # We can do the same for recoded, highest degree etc. 
 
@@ -154,8 +162,8 @@ CREATE TABLE IF NOT EXISTS UNDER_INV_TABLE (				# Only considering Heightened Ca
 */
 
 CREATE TABLE IF NOT EXISTS UNDER_INV_TABLE (
-	ID		int		NOT NULL UNIQUE PRIMARY KEY,
-    flag	int		NOT NULL
+	ID		int			NOT NULL UNIQUE PRIMARY KEY,
+    flag	boolean		NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS SCHOOL_UNDER_INV (
@@ -169,8 +177,8 @@ CREATE TABLE IF NOT EXISTS SCHOOL_UNDER_INV (
 
 CREATE TABLE IF NOT EXISTS CAMPUS_INFO_TABLE (				
 	ID			int			NOT NULL UNIQUE PRIMARY KEY,
-	main		int			NOT NULL,						# Can have 0 and 1 
-    branches	int			NOT NULL,						
+	main		boolean		NOT NULL,						 
+    branches	int			NOT NULL,						# No. of branches
     UNIQUE (main, branches)
 );
 
@@ -184,10 +192,8 @@ CREATE TABLE IF NOT EXISTS SCHOOL_CAMPUS_INFO (
 
 CREATE TABLE IF NOT EXISTS OWN_TABLE (
 	ID			 int			NOT NULL UNIQUE PRIMARY KEY,
-	control		 int			NOT NULL UNIQUE,				# Can have 0,1,2 corresponding 
-    control_desc int			NOT NULL UNIQUE					# to optional fields Public, Private Non-profit, Private Profit  
+	control	ENUM ('Public','Private Non-profit','Private for profit')			
 );
-
 
 CREATE TABLE IF NOT EXISTS SCHOOL_OWN (
 	school_id		int		NOT NULL UNIQUE,
@@ -197,19 +203,21 @@ CREATE TABLE IF NOT EXISTS SCHOOL_OWN (
     FOREIGN KEY (control_id) REFERENCES OWN_TABLE (ID)
 );
 
-CREATE TABLE IF NOT EXISTS CCBASIC_TABLE (
+CREATE TABLE IF NOT EXISTS CARNEGIE_TABLE (
 	ID			int			NOT NULL UNIQUE PRIMARY KEY,
+    cc_type		ENUM ('BASIC','UGPROF','SIZESET')	NOT NULL,
 	classif		int			NOT NULL UNIQUE,
     descr		varchar(64)	NOT NULL UNIQUE			# Optional field
 );
 
-CREATE TABLE IF NOT EXISTS CCUGPROF_TABLE (
+/*
+CREATE TABLE IF NOT EXISTS CC_TABLE (
 	ID			int			NOT NULL UNIQUE PRIMARY KEY,
 	classif		int			NOT NULL UNIQUE,
     descr		varchar(64)	NOT NULL UNIQUE
 );
 
-CREATE TABLE IF NOT EXISTS CCSIZESET_TABLE (
+CREATE TABLE IF NOT EXISTS CC_TABLE (
 	ID			int			NOT NULL UNIQUE PRIMARY KEY,
 	classif		int			NOT NULL UNIQUE,
     descr		varchar(64)	NOT NULL UNIQUE
@@ -225,7 +233,7 @@ CREATE TABLE IF NOT EXISTS CARNEGIE_TABLE (
     FOREIGN KEY (ugprof_id) REFERENCES CCUGPROF_TABLE (ID),
     FOREIGN KEY (sizeset_id) REFERENCES CCSIZESET_TABLE (ID)    
 );
-
+*/
 CREATE TABLE IF NOT EXISTS SCHOOL_CARNEGIE(
 	school_id		int		NOT NULL UNIQUE,
     carnegie_id		int		NOT NULL,
@@ -247,17 +255,22 @@ CREATE TABLE IF NOT EXISTS SCHOOL_MINORITY(
     FOREIGN KEY (minor_id) REFERENCES MINORITY_TABLE (ID)
 );
 
+/*
 CREATE TABLE IF NOT EXISTS BIAS (					
 	ID			int			NOT NULL UNIQUE PRIMARY KEY,	
 	men_only	int			NOT NULL,				
     women_only	int			NOT NULL,				# (ID, men_only, women_only, dist_nly) = (, 1,0,x), (, 0,1, x), (, 0, 0, x)
     dist_only	int			NOT NULL				# Added new field
 );
-
-CREATE VIEW BIAS_TABLE AS SELECT * FROM BIAS WHERE men_only * women_only = 0 WITH CHECK OPTION;     # View to eliminate (some_id_number,1,1,0) and (some_id_number,1,1,1)  
+*/
+# CREATE VIEW BIAS_TABLE AS SELECT * FROM BIAS WHERE men_only * women_only = 0 WITH CHECK OPTION;     # View to eliminate (some_id_number,1,1,0) and (some_id_number,1,1,1)  
 
 #Enums
 
+CREATE TABLE IF NOT EXISTS BIAS_TABLE (
+	ID			int			NOT NULL UNIQUE PRIMARY KEY,
+    bias_type	ENUM ('CO-ED','MEN-ONLY','WOMEN-ONLY')
+);
 
 CREATE TABLE IF NOT EXISTS SCHOOL_BIAS (
 	school_id	int		NOT NULL UNIQUE,
@@ -281,5 +294,71 @@ CREATE TABLE IF NOT EXISTS SCHOOL_RELAFFIL (
     FOREIGN KEY (affil_id) REFERENCES RELAFFIL_TABLE (ID)
 );
 
+CREATE TABLE IF NOT EXISTS PER_FTE_TABLE (
+	ID					int		NOT NULL UNIQUE PRIMARY KEY,
+    net_tuition_revenue	int		NOT NULL,
+    instruct_expend		int		NOT NULL,
+    UNIQUE (net_tuition_revenue, instruct_expend)
+); 
 
+CREATE TABLE IF NOT EXISTS SCHOOL_PER_FTE (
+	school_id		int		NOT NULL UNIQUE,
+    per_fte_id		int		NOT NULL,
+    PRIMARY KEY (school_id, per_fte_id),
+    FOREIGN KEY (school_id) REFERENCES SCHOOL_TABLE (ID),
+    FOREIGN KEY (per_fte_id) REFERENCES PER_FTE_TABLE (ID)
+);
 
+CREATE TABLE IF NOT EXISTS FACULTY_INFO (
+	ID					int		NOT NULL UNIQUE PRIMARY KEY,
+    avg_salary			int		NOT NULL,
+    full_time_share		float	NOT NULL,
+    UNIQUE (avg_salary, full_time_share)
+);
+
+CREATE TABLE IF NOT EXISTS SCHOOL_FACULTY_INFO (
+	school_id		int		NOT NULL UNIQUE,
+    faculty_id		int		NOT NULL,
+    PRIMARY KEY (school_id, faculty_id),
+    FOREIGN KEY (school_id) REFERENCES SCHOOL_TABLE (ID),
+    FOREIGN KEY (faculty_id) REFERENCES PER_FTE_TABLE (ID)
+);
+
+CREATE TABLE IF NOT EXISTS ALIAS_NAME_TABLE (
+	ID			int				NOT NULL UNIQUE PRIMARY KEY,
+    alias_name	varchar(64)		UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS SCHOOL_ALIAS_NAME (
+	school_id		int		NOT NULL UNIQUE,
+    alias_id		int		NOT NULL,
+    PRIMARY KEY (school_id, alias_id),
+    FOREIGN KEY (school_id) REFERENCES SCHOOL_TABLE (ID),
+    FOREIGN KEY (alias_id) REFERENCES ALIAS_NAME_TABLE (ID)
+);
+
+CREATE TABLE IF NOT EXISTS INSTITUTE_LEVEL_TABLE (
+	ID			int		NOT NULL UNIQUE PRIMARY KEY,
+    insti_level	int		NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS SCHOOL_INSTITUTE_LEVEL (
+	school_id			int		NOT NULL UNIQUE,
+    insti_level_id		int		NOT NULL,
+    PRIMARY KEY (school_id, insti_level_id),
+    FOREIGN KEY (school_id) REFERENCES SCHOOL_TABLE (ID),
+    FOREIGN KEY (insti_level_id) REFERENCES INSTITUTE_LEVEL_TABLE (ID)
+);
+
+CREATE TABLE IF NOT EXISTS APPROVAL_DATE_TABLE (
+	ID		int		NOT NULL UNIQUE PRIMARY KEY,
+    _date	date	NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS SCHOOL_APPROVAL_DATE (
+	school_id			int		NOT NULL UNIQUE,
+    approval_date_id		int		NOT NULL,
+    PRIMARY KEY (school_id, approval_date_id),
+    FOREIGN KEY (school_id) REFERENCES SCHOOL_TABLE (ID),
+    FOREIGN KEY (approval_date_id) REFERENCES APPROVAL_DATE_TABLE (ID)
+);
